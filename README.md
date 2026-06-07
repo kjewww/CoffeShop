@@ -1,369 +1,280 @@
-# CoffeeShop Backend
+# CoffeeShop POS
 
-Backend API untuk aplikasi CoffeeShop menggunakan FastAPI dan SQLAlchemy.
+Aplikasi Point of Sale (POS) untuk CoffeeShop — terdiri dari **Backend API** (FastAPI) dan **Frontend** (Streamlit).
+
+---
 
 ## Teknologi
 
-- Python
-- FastAPI
-- SQLAlchemy
-- SQLite
+| Layer    | Stack                                      |
+|----------|--------------------------------------------|
+| Backend  | Python, FastAPI, SQLAlchemy, PostgreSQL     |
+| Frontend | Streamlit, Requests                        |
+| Auth     | JWT (python-jose), bcrypt (passlib)        |
+| Deploy   | Vercel (backend), uv (package manager)     |
+
+---
 
 ## Struktur Proyek
 
-- `app/main.py` - definisi FastAPI dan semua endpoint.
-- `app/models.py` - model database SQLAlchemy.
-- `app/schemas.py` - schema Pydantic untuk request dan response.
-- `app/database.py` - konfigurasi database SQLite dan session.
+```
+CoffeShop/
+├── app/
+│   ├── main.py        # Semua endpoint FastAPI
+│   ├── models.py      # Model database SQLAlchemy
+│   ├── schemas.py     # Schema Pydantic (request & response)
+│   ├── database.py    # Konfigurasi database & session
+│   └── auth.py        # JWT, password hashing, dependency auth
+├── frontend/
+│   ├── main.py        # Halaman login Streamlit
+│   ├── pages/
+│   │   ├── 1_Dashboard.py          # Analytics (admin only)
+│   │   ├── 2_Kasir.py              # Input transaksi (admin & kasir)
+│   │   ├── 3_Manajemen_Stok.py     # Kelola menu & user (admin only)
+│   │   └── 4_History_Transaksi.py  # Riwayat transaksi (admin & kasir)
+│   └── utils/
+│       └── api.py     # Helper HTTP call ke backend
+├── seed.py            # Script seed database & user default
+├── requirements.txt
+└── .env
+```
+
+---
 
 ## Instalasi
 
-1. Buat virtual environment dan aktifkan:
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ```
-2. Install dependency:
-   ```powershell
-   pip install fastapi uvicorn sqlalchemy pydantic
-   ```
-3. Isi data sample:
-    ```
-    python seed.py
-    ```
-4. Jalankan aplikasi:
-   ```powershell
-   uvicorn app.main:app --reload
-   ```
-5. Akses dokumentasi interaktif di:
-   - `http://127.0.0.1:8000/docs`
-   - `http://127.0.0.1:8000/redoc`
+### 1. Clone & masuk ke direktori
+```powershell
+cd CoffeShop
+```
+
+### 2. Buat virtual environment & install dependency
+```powershell
+# Menggunakan uv
+uv venv
+uv pip install -r requirements.txt
+```
+
+Atau menggunakan pip biasa:
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+### 3. Konfigurasi environment
+Buat file `.env` di root project:
+```env
+DATABASE_URL=postgresql://user:password@host:port/dbname
+SECRET_KEY=ganti-dengan-string-acak-yang-panjang-dan-aman
+```
+
+### 4. Seed database
+Membuat tabel, mengisi data menu awal, dan membuat user default:
+```powershell
+python seed.py
+```
+
+User default yang dibuat:
+| Username | Password  | Role  |
+|----------|-----------|-------|
+| admin    | admin123  | admin |
+| kasir1   | kasir123  | kasir |
+
+> ⚠️ Segera ganti password setelah pertama kali login.
+
+### 5. Jalankan backend
+```powershell
+uvicorn app.main:app --reload
+```
+API tersedia di `http://localhost:8000`
+
+### 6. Jalankan frontend
+Buka terminal baru:
+```powershell
+cd frontend
+streamlit run main.py
+```
+Frontend tersedia di `http://localhost:8501`
+
+---
+
+## Autentikasi & Role
+
+Aplikasi menggunakan **JWT Bearer Token** untuk autentikasi. Setiap request ke endpoint yang dilindungi harus menyertakan header:
+```
+Authorization: Bearer <access_token>
+```
+
+### Role & Hak Akses
+
+| Endpoint                  | Admin | Kasir |
+|---------------------------|:-----:|:-----:|
+| Auth (login, me)          | ✅    | ✅    |
+| Auth (register)           | ✅    | ❌    |
+| GET /menus                | ✅    | ✅    |
+| POST/PATCH/PUT/DELETE /menus | ✅ | ❌    |
+| GET/POST /transactions    | ✅    | ✅    |
+| GET /analytics/*          | ✅    | ❌    |
+
+---
 
 ## Database
 
-- Menggunakan SQLite dengan file `database.db`.
-- Tabel yang dibuat otomatis saat server dijalankan.
+Menggunakan **PostgreSQL** (via Supabase atau provider lain). Tabel dibuat otomatis saat server pertama kali dijalankan.
 
 ### Model
 
-- `Menu`
-  - `id`: integer, primary key
-  - `name`: string
-  - `price`: integer
-  - `stock`: integer
+**User**
+| Field           | Tipe    | Keterangan              |
+|-----------------|---------|-------------------------|
+| id              | integer | primary key             |
+| username        | string  | unique                  |
+| hashed_password | string  |                         |
+| role            | enum    | `admin` atau `kasir`    |
+| is_active       | boolean | default `true`          |
 
-- `Transaction`
-  - `id`: integer, primary key
-  - `created_at`: datetime
-  - `total_price`: integer
-  - `details`: relasi ke `TransactionDetail`
+**Menu**
+| Field  | Tipe    | Keterangan  |
+|--------|---------|-------------|
+| id     | integer | primary key |
+| name   | string  |             |
+| price  | integer |             |
+| stock  | integer |             |
 
-- `TransactionDetail`
-  - `id`: integer, primary key
-  - `transaction_id`: foreign key ke `transactions`
-  - `menu_id`: foreign key ke `menus`
-  - `qty`: integer
-  - `subtotal`: integer
+**Transaction**
+| Field       | Tipe     | Keterangan                      |
+|-------------|----------|---------------------------------|
+| id          | integer  | primary key                     |
+| created_at  | datetime | otomatis saat transaksi dibuat  |
+| total_price | integer  |                                 |
+| details     | relasi   | ke `TransactionDetail`          |
+
+**TransactionDetail**
+| Field          | Tipe    | Keterangan              |
+|----------------|---------|-------------------------|
+| id             | integer | primary key             |
+| transaction_id | integer | foreign key → transactions |
+| menu_id        | integer | foreign key → menus     |
+| qty            | integer |                         |
+| subtotal       | integer |                         |
+
+---
 
 ## API Endpoints
 
-Base path: `/api/v1`
+Base path: `/api/v1`  
+Dokumentasi interaktif: `http://localhost:8000/docs`
+
+### Auth
+
+#### Login
+- **POST** `/api/v1/auth/login`
+- Body (form-data): `username`, `password`
+- Response:
+  ```json
+  { "access_token": "<token>", "token_type": "bearer" }
+  ```
+
+#### Cek user aktif
+- **GET** `/api/v1/auth/me` 🔒
+- Response:
+  ```json
+  { "id": 1, "username": "admin", "role": "admin", "is_active": true }
+  ```
+
+#### Buat user baru *(admin only)*
+- **POST** `/api/v1/auth/register` 🔒
+- Body:
+  ```json
+  { "username": "kasir2", "password": "pass123", "role": "kasir" }
+  ```
+
+---
 
 ### Menu
 
-#### Buat menu baru
+| Method   | URL                          | Auth         | Keterangan         |
+|----------|------------------------------|--------------|--------------------|
+| GET      | `/api/v1/menus`              | admin, kasir | Ambil semua menu   |
+| GET      | `/api/v1/menus/{id}`         | admin, kasir | Ambil menu by ID   |
+| POST     | `/api/v1/menus`              | admin        | Tambah menu baru   |
+| PATCH    | `/api/v1/menus/{id}`         | admin        | Update menu        |
+| PUT      | `/api/v1/menus/{id}/stock`   | admin        | Update stok saja   |
+| DELETE   | `/api/v1/menus/{id}`         | admin        | Hapus menu         |
 
-- Method: `POST`
-- URL: `/api/v1/menus`
-- Request body:
-  ```json
-  {
-    "name": "Espresso",
-    "price": 20000,
-    "stock": 10
-  }
-  ```
-- Response:
-  ```json
-  {
-    "id": 1,
-    "name": "Espresso",
-    "price": 20000,
-    "stock": 10
-  }
-  ```
+Contoh request POST `/api/v1/menus`:
+```json
+{ "name": "Espresso", "price": 20000, "stock": 10 }
+```
 
-#### Ambil menu berdasarkan ID
-
-- Method: `GET`
-- URL: `/api/v1/menus/{menu_id}`
-- Response:
-  ```json
-  {
-    "id": 1,
-    "name": "Espresso",
-    "price": 20000,
-    "stock": 10
-  }
-  ```
-
-#### Ambil semua menu
-
-- Method: `GET`
-- URL: `/api/v1/menus`
-- Response:
-  ```json
-  [
-    {
-      "id": 1,
-      "name": "Espresso",
-      "price": 20000,
-      "stock": 10
-    },
-    {
-      "id": 2,
-      "name": "Cappuccino",
-      "price": 25000,
-      "stock": 8
-    }
-  ]
-  ```
-
-#### Update menu
-
-- Method: `PATCH`
-- URL: `/api/v1/menus/{menu_id}`
-- Request body (semua field opsional):
-  ```json
-  {
-    "name": "Latte",
-    "price": 22000,
-    "stock": 12
-  }
-  ```
-- Response:
-  ```json
-  {
-    "id": 1,
-    "name": "Latte",
-    "price": 22000,
-    "stock": 12
-  }
-  ```
-
-#### Update stok menu
-
-- Method: `PUT`
-- URL: `/api/v1/menus/{menu_id}/stock`
-- Request body:
-  ```json
-  {
-    "stock": 15
-  }
-  ```
-- Response:
-  ```json
-  {
-    "id": 1,
-    "name": "Espresso",
-    "price": 20000,
-    "stock": 15
-  }
-  ```
-
-#### Hapus menu
-
-- Method: `DELETE`
-- URL: `/api/v1/menus/{menu_id}`
-- Response:
-  ```json
-  {
-    "message": "Menu deleted successfully"
-  }
-  ```
+---
 
 ### Transaction
 
-#### Buat transaksi
+| Method | URL                              | Auth         | Keterangan              |
+|--------|----------------------------------|--------------|-------------------------|
+| POST   | `/api/v1/transactions`           | admin, kasir | Buat transaksi baru     |
+| GET    | `/api/v1/transactions`           | admin, kasir | Ambil semua transaksi   |
+| GET    | `/api/v1/transactions/{id}`      | admin, kasir | Ambil transaksi by ID   |
 
-- Method: `POST`
-- URL: `/api/v1/transactions`
-- Request body:
-  ```json
-  {
-    "items": [
-      {
-        "menu_id": 1,
-        "qty": 2
-      },
-      {
-        "menu_id": 2,
-        "qty": 1
-      }
-    ]
-  }
-  ```
-- Response:
-  ```json
-  {
-    "id": 1,
-    "created_at": "2025-01-01T12:00:00",
-    "total_price": 65000,
-    "details": [
-      {
-        "menu_id": 1,
-        "qty": 2,
-        "subtotal": 40000
-      },
-      {
-        "menu_id": 2,
-        "qty": 1,
-        "subtotal": 25000
-      }
-    ]
-  }
-  ```
-
-- Validasi:
-  - Menu harus ada
-  - Stok harus cukup
-  - Jika stok tidak cukup, response error 400 dengan detail `Stok tidak mencukupi...`
-
-#### Ambil semua transaksi
-
-- Method: `GET`
-- URL: `/api/v1/transactions`
-- Response:
-  ```json
-  [
-    {
-      "id": 1,
-      "created_at": "2025-01-01T12:00:00",
-      "total_price": 65000,
-      "details": [
-        {
-          "menu_id": 1,
-          "qty": 2,
-          "subtotal": 40000
-        }
-      ]
-    }
+Contoh request POST `/api/v1/transactions`:
+```json
+{
+  "items": [
+    { "menu_id": 1, "qty": 2 },
+    { "menu_id": 3, "qty": 1 }
   ]
-  ```
+}
+```
 
-#### Ambil transaksi berdasarkan ID
+Validasi:
+- Menu harus ada
+- Stok harus mencukupi (error 400 jika tidak cukup)
+- Stok otomatis berkurang setelah transaksi berhasil
 
-- Method: `GET`
-- URL: `/api/v1/transactions/{transaction_id}`
-- Response:
-  ```json
-  {
-    "id": 1,
-    "created_at": "2025-01-01T12:00:00",
-    "total_price": 65000,
-    "details": [
-      {
-        "menu_id": 1,
-        "qty": 2,
-        "subtotal": 40000
-      }
-    ]
-  }
-  ```
+---
 
-### Analytics
+### Analytics *(admin only)*
 
-#### Ringkasan analytics
+| Method | URL                                    | Keterangan                    |
+|--------|----------------------------------------|-------------------------------|
+| GET    | `/api/v1/analytics/summary`            | Total revenue, transaksi, menu|
+| GET    | `/api/v1/analytics/revenue-per-day`    | Revenue harian                |
+| GET    | `/api/v1/analytics/total-revenue`      | Total revenue all time        |
+| GET    | `/api/v1/analytics/total-transactions` | Total transaksi all time      |
+| GET    | `/api/v1/analytics/best-selling-menu`  | 5 menu terlaris               |
+| GET    | `/api/v1/analytics/total-sold-per-menu`| Total terjual per menu        |
 
-- Method: `GET`
-- URL: `/api/v1/analytics/summary`
-- Response:
-  ```json
-  {
-    "total_revenue": 65000,
-    "total_transactions": 1,
-    "total_menus": 4
-  }
-  ```
+---
 
-#### Revenue per day
+## Frontend (Streamlit)
 
-- Method: `GET`
-- URL: `/api/v1/analytics/revenue-per-day`
-- Response:
-  ```json
-  [
-    {
-      "date": "2025-01-01",
-      "total_revenue": 65000
-    }
-  ]
-  ```
+Aplikasi frontend memiliki 4 halaman utama:
 
-#### Total revenue all time
+| Halaman               | Role          | Fitur                                                   |
+|-----------------------|---------------|---------------------------------------------------------|
+| 📊 Dashboard          | Admin only    | Metrics summary, grafik revenue harian, bar chart menu terlaris, tabel total penjualan |
+| 🧾 Kasir              | Admin & Kasir | Input transaksi dengan cart, pilih menu & qty, proses pembayaran |
+| 📦 Manajemen Stok     | Admin only    | Tambah/edit/hapus menu, update stok, buat akun user baru |
+| 📜 History Transaksi  | Admin & Kasir | Tabel riwayat transaksi, filter tanggal, detail per transaksi |
 
-- Method: `GET`
-- URL: `/api/v1/analytics/total-revenue`
-- Response:
-  ```json
-  {
-    "total_revenue": 65000
-  }
-  ```
-
-#### Total transaksi all time
-
-- Method: `GET`
-- URL: `/api/v1/analytics/total-transactions`
-- Response:
-  ```json
-  {
-    "total_transactions": 1
-  }
-  ```
-
-#### Best selling menu
-
-- Method: `GET`
-- URL: `/api/v1/analytics/best-selling-menu`
-- Response:
-  ```json
-  [
-    {
-      "menu_name": "Espresso",
-      "total_sold": 5
-    }
-  ]
-  ```
-
-#### Total terjual per menu
-
-- Method: `GET`
-- URL: `/api/v1/analytics/total-sold-per-menu`
-- Response:
-  ```json
-  [
-    {
-      "menu_name": "Espresso",
-      "total_sold": 5
-    }
-  ]
-  ```
+---
 
 ## Error Handling
 
-- `404 Not Found`: Ketika menu atau transaksi tidak ditemukan.
-- `400 Bad Request`: Ketika stok tidak mencukupi atau permintaan tidak valid.
+| Kode | Keterangan                                      |
+|------|-------------------------------------------------|
+| 400  | Request tidak valid (stok kurang, username duplikat, dsb) |
+| 401  | Token tidak ada, tidak valid, atau sudah expired |
+| 403  | Token valid tapi role tidak punya akses          |
+| 404  | Menu atau transaksi tidak ditemukan              |
+
+---
 
 ## Catatan
 
-- `created_at` pada transaksi dibuat otomatis menggunakan waktu server.
-- Stok menu dikurangi saat transaksi dibuat.
-- Response model Pydantic menggunakan `orm_mode = True` agar model SQLAlchemy dapat di-serialisasi dengan benar.
-
-## Saran Perbaikan
-
-- Tambahkan validasi harga, nama, dan stok pada schema.
-- Tambahkan endpoint pagination untuk daftar menu dan transaksi.
-- Tambahkan fitur autentikasi jika dibutuhkan.
-- Tambahkan unit test untuk endpoint dan model.
+- Token JWT berlaku selama **8 jam** sejak login.
+- `created_at` pada transaksi diisi otomatis oleh server.
+- Semua endpoint (kecuali `/` dan `/api/v1/auth/login`) membutuhkan token.
+- Untuk mengakses Swagger UI dengan auth: klik tombol **Authorize** di `http://localhost:8000/docs`, lalu masukkan token.
