@@ -31,7 +31,7 @@ async def root():
 async def register(
     payload: UserCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),          # hanya admin yang bisa bikin akun
+    _: User = Depends(require_admin),
 ):
     existing = db.query(User).filter(User.username == payload.username).first()
     if existing:

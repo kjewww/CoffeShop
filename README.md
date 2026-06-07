@@ -89,16 +89,6 @@ uvicorn app.main:app --reload
 ```
 API tersedia di `http://localhost:8000`
 
-### 6. Jalankan frontend
-Buka terminal baru:
-```powershell
-cd frontend
-streamlit run main.py
-```
-Frontend tersedia di `http://localhost:8501`
-
----
-
 ## Autentikasi & Role
 
 Aplikasi menggunakan **JWT Bearer Token** untuk autentikasi. Setiap request ke endpoint yang dilindungi harus menyertakan header:
@@ -110,8 +100,8 @@ Authorization: Bearer <access_token>
 
 | Endpoint                  | Admin | Kasir |
 |---------------------------|:-----:|:-----:|
-| Auth (login, me)          | ✅    | ✅    |
-| Auth (register)           | ✅    | ❌    |
+| POST /auth/login          | ✅    | ✅    |
+| POST /auth/register          | ✅    | ❌    |
 | GET /menus                | ✅    | ✅    |
 | POST/PATCH/PUT/DELETE /menus | ✅ | ❌    |
 | GET/POST /transactions    | ✅    | ✅    |
@@ -164,7 +154,7 @@ Menggunakan **PostgreSQL** (via Supabase atau provider lain). Tabel dibuat otoma
 ## API Endpoints
 
 Base path: `/api/v1`  
-Dokumentasi interaktif: `http://localhost:8000/docs`
+Dokumentasi: `http://localhost:8000/docs`
 
 ### Auth
 
@@ -245,19 +235,6 @@ Validasi:
 | GET    | `/api/v1/analytics/total-transactions` | Total transaksi all time      |
 | GET    | `/api/v1/analytics/best-selling-menu`  | 5 menu terlaris               |
 | GET    | `/api/v1/analytics/total-sold-per-menu`| Total terjual per menu        |
-
----
-
-## Frontend (Streamlit)
-
-Aplikasi frontend memiliki 4 halaman utama:
-
-| Halaman               | Role          | Fitur                                                   |
-|-----------------------|---------------|---------------------------------------------------------|
-| 📊 Dashboard          | Admin only    | Metrics summary, grafik revenue harian, bar chart menu terlaris, tabel total penjualan |
-| 🧾 Kasir              | Admin & Kasir | Input transaksi dengan cart, pilih menu & qty, proses pembayaran |
-| 📦 Manajemen Stok     | Admin only    | Tambah/edit/hapus menu, update stok, buat akun user baru |
-| 📜 History Transaksi  | Admin & Kasir | Tabel riwayat transaksi, filter tanggal, detail per transaksi |
 
 ---
 
