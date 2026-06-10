@@ -24,17 +24,17 @@ def seed_users():
             print("User admin sudah ada, skip.")
 
         # Buat kasir default
-        if not db.query(User).filter(User.username == "kasir1").first():
+        if not db.query(User).filter(User.username == "kasir3").first():
             kasir = User(
-                username="kasir1",
+                username="kasir3",
                 hashed_password=hash_password("kasir123"),
                 role="kasir",
             )
             db.add(kasir)
             db.commit()
-            print("User kasir dibuat  → username: kasir1 | password: kasir123")
+            print("User kasir dibuat  → username: kasir3 | password: kasir123")
         else:
-            print("User kasir1 sudah ada, skip.")
+            print("User kasir3 sudah ada, skip.")
     finally:
         db.close()
 
