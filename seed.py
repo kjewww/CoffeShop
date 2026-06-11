@@ -1,10 +1,42 @@
 from datetime import datetime
 from app.database import SessionLocal, engine, Base
-from app.models import Menu, Transaction, TransactionDetail
+from app.models import Menu, Transaction, TransactionDetail, User
+from app.auth import hash_password
 
 
 def create_tables():
     Base.metadata.create_all(bind=engine)
+
+
+def seed_users():
+    db = SessionLocal()
+    try:
+        if not db.query(User).filter(User.username == "admin").first():
+            admin = User(
+                username="admin",
+                hashed_password=hash_password("admin"),
+                role="admin",
+            )
+            db.add(admin)
+            db.commit()
+            print("User admin dibuat  → username: admin | password: admin")
+        else:
+            print("User admin sudah ada, skip.")
+
+        # Buat kasir default
+        if not db.query(User).filter(User.username == "kasir3").first():
+            kasir = User(
+                username="kasir3",
+                hashed_password=hash_password("kasir123"),
+                role="kasir",
+            )
+            db.add(kasir)
+            db.commit()
+            print("User kasir dibuat  → username: kasir3 | password: kasir123")
+        else:
+            print("User kasir3 sudah ada, skip.")
+    finally:
+        db.close()
 
 
 def seed_data():
@@ -60,4 +92,5 @@ def seed_data():
 
 if __name__ == "__main__":
     create_tables()
+    seed_users()
     seed_data()
