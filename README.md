@@ -8,10 +8,10 @@ Aplikasi Point of Sale (POS) untuk CoffeeShop — terdiri dari **Backend API** (
 
 | Layer    | Stack                                      |
 |----------|--------------------------------------------|
-| Backend  | Python, FastAPI, SQLAlchemy, PostgreSQL     |
+| Backend  | Python, FastAPI, SQLAlchemy, PostgreSQL    |
 | Frontend | Streamlit, Requests                        |
 | Auth     | JWT (python-jose), bcrypt (passlib)        |
-| Deploy   | Vercel (backend), uv (package manager)     |
+| Deploy   | Vercel (backend), uv (package manager), supabase (db)     |
 
 ---
 
@@ -25,17 +25,8 @@ CoffeShop/
 │   ├── schemas.py     # Schema Pydantic (request & response)
 │   ├── database.py    # Konfigurasi database & session
 │   └── auth.py        # JWT, password hashing, dependency auth
-├── frontend/
-│   ├── main.py        # Halaman login Streamlit
-│   ├── pages/
-│   │   ├── 1_Dashboard.py          # Analytics (admin only)
-│   │   ├── 2_Kasir.py              # Input transaksi (admin & kasir)
-│   │   ├── 3_Manajemen_Stok.py     # Kelola menu & user (admin only)
-│   │   └── 4_History_Transaksi.py  # Riwayat transaksi (admin & kasir)
-│   └── utils/
-│       └── api.py     # Helper HTTP call ke backend
-├── seed.py            # Script seed database & user default
 ├── requirements.txt
+├── seed.py            # Script seed database & user default
 └── .env
 ```
 
@@ -43,33 +34,20 @@ CoffeShop/
 
 ## Instalasi
 
-### 1. Clone & masuk ke direktori
+### 1. Buat virtual environment & install dependency
 ```powershell
-cd CoffeShop
-```
-
-### 2. Buat virtual environment & install dependency
-```powershell
-# Menggunakan uv
 uv venv
 uv pip install -r requirements.txt
 ```
 
-Atau menggunakan pip biasa:
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-### 3. Konfigurasi environment
+### 2. Konfigurasi environment
 Buat file `.env` di root project:
 ```env
 DATABASE_URL=postgresql://user:password@host:port/dbname
 SECRET_KEY=ganti-dengan-string-acak-yang-panjang-dan-aman
 ```
 
-### 4. Seed database
+### 3. Seed database
 Membuat tabel, mengisi data menu awal, dan membuat user default:
 ```powershell
 python seed.py
@@ -78,10 +56,10 @@ python seed.py
 User default yang dibuat:
 | Username | Password  | Role  |
 |----------|-----------|-------|
-| admin    | admin123  | admin |
-| kasir1   | kasir123  | kasir |
+| admin    | admin     | admin |
+| kasir    | kasir     | kasir |
 
-> ⚠️ Segera ganti password setelah pertama kali login.
+
 
 ### 5. Jalankan backend
 ```powershell
@@ -177,7 +155,7 @@ Dokumentasi: `http://localhost:8000/docs`
 - **POST** `/api/v1/auth/register` 🔒
 - Body:
   ```json
-  { "username": "kasir2", "password": "pass123", "role": "kasir" }
+  { "username": "kasir", "password": "kasir", "role": "kasir" }
   ```
 
 ---
