@@ -8,7 +8,7 @@ Aplikasi Point of Sale (POS) untuk CoffeeShop — terdiri dari **Backend API** (
 
 | Layer    | Stack                                      |
 |----------|--------------------------------------------|
-| Backend  | Python, FastAPI, SQLAlchemy, PostgreSQL    |
+| Backend  | Python, FastAPI, SQLAlchemy, PostgreSQL, Pydantic    |
 | Frontend | Streamlit, Requests                        |
 | Auth     | JWT (python-jose), bcrypt (passlib)        |
 | Deploy   | Vercel (backend), uv (package manager), supabase (db)     |
