@@ -15,7 +15,7 @@ from app.schemas import TokenData
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "changeme-please-use-a-long-random-secret")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8  # 8 jam
 

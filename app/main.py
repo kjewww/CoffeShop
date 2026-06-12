@@ -25,8 +25,9 @@ async def root():
     return {"message": "Hello World"}
 
 
-# AUTH ROUTES =================================================================
+# AUTH ROUTES (3) =========================================================================
 
+# register akun baru, cuma bisa admin
 @app.post("/api/v1/auth/register", response_model=UserResponse, status_code=201)
 async def register(
     payload: UserCreate,
@@ -71,9 +72,10 @@ async def me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-# MENU ROUTES =================================================================
+# MENU ROUTES (6) =================================================================
 # kasir hanya bisa read menu
 
+# create menu baru, cm bisa admin
 @app.post("/api/v1/menus", response_model=MenuResponse, status_code=201)
 async def create_menu(
     payload: MenuCreate,
@@ -86,7 +88,7 @@ async def create_menu(
     db.refresh(menu)
     return menu
 
-
+# get menu by id
 @app.get("/api/v1/menus/{menu_id}", response_model=MenuResponse)
 async def read_menu(
     menu_id: int,
@@ -98,7 +100,7 @@ async def read_menu(
         raise HTTPException(status_code=404, detail="Menu not found")
     return menu
 
-
+# get semua menu
 @app.get("/api/v1/menus", response_model=list[MenuResponse])
 async def read_menus(
     db: Session = Depends(get_db),
@@ -106,7 +108,7 @@ async def read_menus(
 ):
     return db.query(Menu).all()
 
-
+# update menu, cuma bisa admin
 @app.patch("/api/v1/menus/{menu_id}", response_model=MenuResponse)
 async def update_menu(
     menu_id: int,
@@ -129,7 +131,7 @@ async def update_menu(
     db.refresh(menu)
     return menu
 
-
+# update stock menu, cuma bisa admin
 @app.put("/api/v1/menus/{menu_id}/stock", response_model=MenuResponse)
 async def update_menu_stock(
     menu_id: int,
@@ -145,7 +147,7 @@ async def update_menu_stock(
     db.refresh(menu)
     return menu
 
-
+# delete menu, cuma bisa admin
 @app.delete("/api/v1/menus/{menu_id}")
 async def delete_menu(
     menu_id: int,
@@ -160,10 +162,10 @@ async def delete_menu(
     return {"message": "Menu deleted successfully"}
 
 
-# TRANSACTION ROUTES ==========================================================
+# TRANSACTION ROUTES (3) ==========================================================
 # utk kasir dan admin
 
-
+# buat transaksi baru, ngurangi stock di db, buat detail transaksi
 @app.post("/api/v1/transactions", status_code=201, response_model=TransactionResponse)
 async def create_transaction(
     payload: TransactionCreate,
@@ -204,7 +206,7 @@ async def create_transaction(
     db.refresh(new_transaction)
     return new_transaction
 
-
+# get semua transaksi
 @app.get("/api/v1/transactions", response_model=list[TransactionResponse])
 async def read_all_transactions(
     db: Session = Depends(get_db),
@@ -212,7 +214,7 @@ async def read_all_transactions(
 ):
     return db.query(Transaction).all()
 
-
+# get detail transaksi by id
 @app.get("/api/v1/transactions/{transaction_id}", response_model=TransactionResponse)
 async def read_transaction(
     transaction_id: int,
@@ -225,8 +227,9 @@ async def read_transaction(
     return transaction
 
 
-# ANALYTICS ROUTES ============================================================
+# ANALYTICS ROUTES (6) ============================================================
 # admin only
+
 
 @app.get("/api/v1/analytics/summary")
 async def analytics_summary(

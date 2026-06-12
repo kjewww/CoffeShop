@@ -18,7 +18,6 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False, default=UserRole.kasir)
     is_active = Column(Boolean, default=True)
 
-
 class Menu(Base):
     __tablename__ = "menus"
     

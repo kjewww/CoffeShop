@@ -7,7 +7,7 @@ from datetime import datetime
 class UserCreate(BaseModel):
     username: str
     password: str
-    role: str = "kasir"  # default kasir
+    role: str = "kasir"
 
 
 class UserResponse(BaseModel):
@@ -15,7 +15,6 @@ class UserResponse(BaseModel):
     username: str
     role: str
     is_active: bool
-
     class Config:
         orm_mode = True
 
